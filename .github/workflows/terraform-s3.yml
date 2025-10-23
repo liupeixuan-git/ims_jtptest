@@ -11,7 +11,6 @@ on:
       - 'terraform/s3-sample/**'
 
 permissions:
-  id-token: write
   contents: read
 
 jobs:
@@ -21,9 +20,7 @@ jobs:
     defaults:
       run:
         working-directory: terraform/s3-sample
-    env:
-      TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
+        # Removed job-level env block
 
     steps:
       - name: Checkout
@@ -36,12 +33,11 @@ jobs:
 
       - name: Configure AWS credentials
         if: github.event_name == 'push' || github.event_name == 'pull_request'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
           role-session-name: github-actions-terraform
-          audience: sts.amazonaws.com
 
       - name: Terraform init
         run: terraform init -input=false
