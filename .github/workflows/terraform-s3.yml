@@ -11,6 +11,7 @@ on:
       - 'terraform/s3-sample/**'
 
 permissions:
+  id-token: write
   contents: read
 
 jobs:
