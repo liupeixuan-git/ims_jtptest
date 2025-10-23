@@ -40,6 +40,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: github-actions-terraform
+          audience: sts.amazonaws.com
 
       - name: Terraform init
         run: terraform init -input=false
