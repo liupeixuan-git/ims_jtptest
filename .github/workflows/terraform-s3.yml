@@ -1,0 +1,66 @@
+name: Terraform S3 CI
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/s3-sample/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/s3-sample/**'
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/s3-sample
+    env:
+      TF_VAR_bucket_name: ${{ secrets.BUCKET_NAME }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: '1.5.7'
+
+      - name: Configure AWS credentials
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-terraform
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform fmt
+        run: terraform fmt -check
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        id: plan
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Upload plan
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: terraform/s3-sample/tfplan
+
+      - name: Terraform apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -input=false -auto-approve tfplan
